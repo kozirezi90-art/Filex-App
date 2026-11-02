@@ -89,7 +89,9 @@ public class MainActivity extends AppCompatActivity {
         btnSrc.setOnClickListener(v -> {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-            pickSource.launch(i);
+            // PAKSA MUNCULIN POP-UP PILIH FILE MANAGER
+            Intent chooser = Intent.createChooser(i, "Pilih File Manager (Ex, ZArchiver, dll)");
+            pickSource.launch(chooser);
         });
 
         Button btnDst = new Button(this);
@@ -97,10 +99,11 @@ public class MainActivity extends AppCompatActivity {
         btnDst.setOnClickListener(v -> {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-            pickDest.launch(i);
+            // PAKSA MUNCULIN POP-UP PILIH FILE MANAGER
+            Intent chooser = Intent.createChooser(i, "Pilih File Manager (Ex, ZArchiver, dll)");
+            pickDest.launch(chooser);
         });
 
-        // TOMBOL AJAIB BUAT NEMBUS FOLDER PRIVATE
         Button btnForceCopy = new Button(this);
         btnForceCopy.setText("3. FORCE COPY (Android/Data)");
         btnForceCopy.setOnClickListener(v -> {
@@ -125,8 +128,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void doForceCopy() {
-        // Kita hardcode path-nya buat ngetes (Ganti sesuai kebutuhan)
-        // Contoh: Ngebaca folder game, terus save ke Download
         File sourceFolder = new File(Environment.getExternalStorageDirectory(), "Android/data");
         File destFolder = new File(Environment.getExternalStorageDirectory(), "Download/FileX_Backup");
 
