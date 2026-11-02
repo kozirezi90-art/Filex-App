@@ -31,8 +31,10 @@ public class MainActivity extends AppCompatActivity {
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
-                    getContentResolver().takePersistableUriPermission(
-                        uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    try {
+                        getContentResolver().takePersistableUriPermission(
+                            uri, Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                    } catch (Exception e) {}
                     sourceTree = uri;
                     updateStatus();
                 }
@@ -43,10 +45,12 @@ public class MainActivity extends AppCompatActivity {
             result -> {
                 if (result.getResultCode() == Activity.RESULT_OK && result.getData() != null) {
                     Uri uri = result.getData().getData();
-                    getContentResolver().takePersistableUriPermission(
-                        uri,
-                        Intent.FLAG_GRANT_READ_URI_PERMISSION |
-                        Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    try {
+                        getContentResolver().takePersistableUriPermission(
+                            uri,
+                            Intent.FLAG_GRANT_READ_URI_PERMISSION |
+                            Intent.FLAG_GRANT_WRITE_URI_PERMISSION);
+                    } catch (Exception e) {}
                     destTree = uri;
                     updateStatus();
                 }
@@ -76,7 +80,9 @@ public class MainActivity extends AppCompatActivity {
             Intent i = new Intent(Intent.ACTION_OPEN_DOCUMENT_TREE);
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-            pickSource.launch(i);
+            // INI DIA TRIK CHOOSER NYA
+            Intent chooser = Intent.createChooser(i, "Pilih File Manager");
+            pickSource.launch(chooser);
         });
 
         Button btnDst = new Button(this);
@@ -86,7 +92,9 @@ public class MainActivity extends AppCompatActivity {
             i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION |
                     Intent.FLAG_GRANT_WRITE_URI_PERMISSION |
                     Intent.FLAG_GRANT_PERSISTABLE_URI_PERMISSION);
-            pickDest.launch(i);
+            // INI DIA TRIK CHOOSER NYA
+            Intent chooser = Intent.createChooser(i, "Pilih File Manager");
+            pickDest.launch(chooser);
         });
 
         Button btnCopy = new Button(this);
@@ -116,23 +124,27 @@ public class MainActivity extends AppCompatActivity {
         DocumentFile srcDoc = DocumentFile.fromTreeUri(this, src);
         DocumentFile dstDoc = DocumentFile.fromTreeUri(this, dst);
         
-        // Fallback kalau yang di-share itu file satuan, bukan folder tree
-        if (srcDoc == null) {
+        // Fallback kalau yang di-share itu file satuan
+        if (srcDoc == null && dstDoc != null) {
             try {
                 DocumentFile out = dstDoc.createFile("application/octet-stream", "shared_file.dat");
                 java.io.InputStream in = getContentResolver().openInputStream(src);
                 java.io.OutputStream os = getContentResolver().openOutputStream(out.getUri());
-                byte[] buf = new byte[8192];
-                int len;
-                while ((len = in.read(buf)) > 0) os.write(buf, 0, len);
-                in.close();
-                os.close();
+                if (in != null && os != null) {
+                    byte[] buf = new byte[8192];
+                    int len;
+                    while ((len = in.read(buf)) > 0) os.write(buf, 0, len);
+                    in.close();
+                    os.close();
+                }
                 runOnUiThread(() -> status.append("\nFile satuan berhasil di-copy."));
             } catch (Exception e) {
                 runOnUiThread(() -> status.append("\nERROR: " + e.getMessage()));
             }
             return;
         }
+
+        if (srcDoc == null || dstDoc == null) return;
 
         try {
             int n = copyRecursive(srcDoc, dstDoc);
