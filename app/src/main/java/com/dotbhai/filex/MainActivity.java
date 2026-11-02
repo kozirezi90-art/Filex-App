@@ -1,7 +1,6 @@
 package com.dotbhai.filex;
 
 import android.Manifest;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.net.Uri;
@@ -13,18 +12,14 @@ import android.widget.Button;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
-import androidx.core.content.ContextCompat;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -41,7 +36,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // 1. MINTA IZIN DEWA
+        // MINTA IZIN DEWA
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
             if (!Environment.isExternalStorageManager()) {
                 Intent intent = new Intent(Settings.ACTION_MANAGE_APP_ALL_FILES_ACCESS_PERMISSION);
@@ -65,20 +60,21 @@ public class MainActivity extends AppCompatActivity {
         fileListLayout.setOrientation(LinearLayout.VERTICAL);
 
         Button btnSrc = new Button(this);
-        btnSrc.setText("1. PILIH SUMBER");
+        btnSrc.setText("1. PILIH SUMBER (Mulai dari Android/Data)");
         btnSrc.setOnClickListener(v -> {
             isSelectingSource = true;
             isSelectingDest = false;
-            currentDir = Environment.getExternalStorageDirectory();
+            // LANGSUNG TEMBAK KE FOLDER ANDROID/DATA
+            currentDir = new File(Environment.getExternalStorageDirectory(), "Android/data");
             showFileList();
         });
 
         Button btnDst = new Button(this);
-        btnDst.setText("2. PILIH TUJUAN");
+        btnDst.setText("2. PILIH TUJUAN (Pilih Folder Download)");
         btnDst.setOnClickListener(v -> {
             isSelectingSource = false;
             isSelectingDest = true;
-            currentDir = Environment.getExternalStorageDirectory();
+            currentDir = new File(Environment.getExternalStorageDirectory(), "Download");
             showFileList();
         });
 
@@ -101,12 +97,12 @@ public class MainActivity extends AppCompatActivity {
         setContentView(mainLayout);
     }
 
-    // FUNGSI BUAT NAMPILIN DAFTAR FILE DI DALEM APP
     private void showFileList() {
         fileListLayout.removeAllViews();
+        if (currentDir == null) return;
+        
         status.setText("Lokasi: " + currentDir.getAbsolutePath());
 
-        // Tombol mundur (..)
         Button btnUp = new Button(this);
         btnUp.setText(".. (Kembali)");
         btnUp.setOnClickListener(v -> {
@@ -117,30 +113,36 @@ public class MainActivity extends AppCompatActivity {
         });
         fileListLayout.addView(btnUp);
 
+        // PAKE FILE LIST TAPI DIPAKSA READ
         File[] files = currentDir.listFiles();
-        if (files != null) {
-            Arrays.sort(files, (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName()));
-            for (File file : files) {
-                Button btnFile = new Button(this);
-                btnFile.setText(file.isDirectory() ? "[FOLDER] " + file.getName() : "[FILE] " + file.getName());
-                btnFile.setOnClickListener(v -> {
-                    if (file.isDirectory()) {
-                        currentDir = file;
-                        showFileList(); // Masuk ke folder
-                    } else {
-                        // Kalo file dipilih
-                        if (isSelectingSource) {
-                            selectedSource = file;
-                            status.setText("Sumber terpilih: " + file.getName());
-                        } else if (isSelectingDest) {
-                            selectedDest = file;
-                            status.setText("Tujuan terpilih: " + file.getName());
-                        }
-                        fileListLayout.removeAllViews(); // Tutup list
+        
+        if (files == null || files.length == 0) {
+            Button btnEmpty = new Button(this);
+            btnEmpty.setText("(Folder kosong / Sistem memblokir)");
+            fileListLayout.addView(btnEmpty);
+            return;
+        }
+
+        Arrays.sort(files, (f1, f2) -> f1.getName().compareToIgnoreCase(f2.getName()));
+        for (File file : files) {
+            Button btnFile = new Button(this);
+            btnFile.setText(file.isDirectory() ? "[FOLDER] " + file.getName() : "[FILE] " + file.getName());
+            btnFile.setOnClickListener(v -> {
+                if (file.isDirectory()) {
+                    currentDir = file;
+                    showFileList(); // Masuk ke folder
+                } else {
+                    if (isSelectingSource) {
+                        selectedSource = file;
+                        status.setText("Sumber terpilih: " + file.getName());
+                    } else if (isSelectingDest) {
+                        selectedDest = file;
+                        status.setText("Tujuan terpilih: " + file.getName());
                     }
-                });
-                fileListLayout.addView(btnFile);
-            }
+                    fileListLayout.removeAllViews();
+                }
+            });
+            fileListLayout.addView(btnFile);
         }
     }
 
